@@ -13,6 +13,7 @@
 #include <linux/phy.h>
 #include <linux/ethtool.h>
 #include <linux/ethtool_netlink.h>
+#include <linux/leds.h>
 #include <linux/netdevice.h>
 
 #define MII_BCM_CHANNEL_WIDTH     0x2000
@@ -1085,29 +1086,114 @@ EXPORT_SYMBOL_GPL(bcm_phy_wol_isr);
 int bcm_phy_led_brightness_set(struct phy_device *phydev,
 			       u8 index, enum led_brightness value)
 {
-	u8 led_num;
 	int ret;
-	u16 reg;
+	u16 val;
+	int shift;
+
+	if (index != 1 && index != 2)
+		return -EINVAL;
+
+	shift = (index == 1) ? 4 : 0;
+
+	ret = bcm_phy_read_exp(phydev, BCM_EXP_MULTICOLOR);
+	if (ret < 0)
+		return ret;
+
+	ret &= ~(0xf << shift);
+	val = (value == LED_OFF) ? BCM_LED_MULTICOLOR_OFF : BCM_LED_MULTICOLOR_ON;
+	ret |= (val << shift);
+
+	phydev_info(phydev, "Setting LED %d brightness to %d (val 0x%x)\n", index, value, val);
+
+	return bcm_phy_write_exp(phydev, BCM_EXP_MULTICOLOR, ret);
+}
+EXPORT_SYMBOL_GPL(bcm_phy_led_brightness_set);
+
+int bcm_phy_led_hw_control_get(struct phy_device *phydev, u8 index,
+			       unsigned long *rules)
+{
+	int ret;
+	int shift;
+	u16 val;
+
+	if (index != 1 && index != 2)
+		return -EINVAL;
+
+	shift = (index == 1) ? 4 : 0;
+
+	ret = bcm_phy_read_exp(phydev, BCM_EXP_MULTICOLOR);
+	if (ret < 0)
+		return ret;
+
+	val = (ret >> shift) & 0xf;
+
+	if (val == BCM_LED_MULTICOLOR_LINK_ACT) {
+		*rules = BIT(TRIGGER_NETDEV_LINK) | BIT(TRIGGER_NETDEV_RX) |
+			 BIT(TRIGGER_NETDEV_TX);
+	} else if (val == BCM_LED_MULTICOLOR_LINK) {
+		*rules = BIT(TRIGGER_NETDEV_LINK);
+	} else {
+		*rules = 0;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(bcm_phy_led_hw_control_get);
+
+int bcm_phy_led_hw_control_set(struct phy_device *phydev, u8 index,
+			       unsigned long rules)
+{
+	int ret;
+	u16 val;
+	int shift;
+
+	if (index != 1 && index != 2)
+		return -EINVAL;
+
+	shift = (index == 1) ? 4 : 0;
+
+	ret = bcm_phy_read_exp(phydev, BCM_EXP_MULTICOLOR);
+	if (ret < 0)
+		return ret;
+
+	ret &= ~(0xf << shift);
+
+	if (rules & BIT(TRIGGER_NETDEV_RX))
+		val = BCM_LED_MULTICOLOR_LINK_ACT;
+	else if (rules & BIT(TRIGGER_NETDEV_LINK))
+		val = BCM_LED_MULTICOLOR_LINK;
+	else
+		val = BCM_LED_MULTICOLOR_OFF;
+
+	ret |= (val << shift);
+
+	phydev_info(phydev, "Setting LED %d hw_control to 0x%x (rules %lu)\n", index, val, rules);
+
+	return bcm_phy_write_exp(phydev, BCM_EXP_MULTICOLOR, ret);
+}
+EXPORT_SYMBOL_GPL(bcm_phy_led_hw_control_set);
+
+int bcm_phy_led_hw_is_supported(struct phy_device *phydev, u8 index,
+				unsigned long rules)
+{
+	const unsigned long mask = BIT(TRIGGER_NETDEV_LINK_10) |
+				   BIT(TRIGGER_NETDEV_LINK_100) |
+				   BIT(TRIGGER_NETDEV_LINK_1000) |
+				   BIT(TRIGGER_NETDEV_RX) |
+				   BIT(TRIGGER_NETDEV_TX);
 
 	if (index >= 4)
 		return -EINVAL;
 
-	/* Two LEDS per register */
-	led_num = index % 2;
-	reg = index >= 2 ? BCM54XX_SHD_LEDS2 : BCM54XX_SHD_LEDS1;
+	/* Filter out any other unsupported triggers. */
+	if (rules & ~mask)
+		return -EOPNOTSUPP;
 
-	ret = bcm_phy_read_shadow(phydev, reg);
-	if (ret < 0)
-		return ret;
-
-	ret &= ~(BCM_LED_SRC_MASK << BCM54XX_SHD_LEDS_SHIFT(led_num));
-	if (value == LED_OFF)
-		ret |= BCM_LED_SRC_OFF << BCM54XX_SHD_LEDS_SHIFT(led_num);
-	else
-		ret |= BCM_LED_SRC_ON << BCM54XX_SHD_LEDS_SHIFT(led_num);
-	return bcm_phy_write_shadow(phydev, reg, ret);
+	return 0;
 }
-EXPORT_SYMBOL_GPL(bcm_phy_led_brightness_set);
+EXPORT_SYMBOL_GPL(bcm_phy_led_hw_is_supported);
+
+
 
 int bcm_setup_lre_master_slave(struct phy_device *phydev)
 {

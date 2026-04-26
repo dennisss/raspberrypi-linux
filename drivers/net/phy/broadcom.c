@@ -1491,6 +1491,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.get_wol	= bcm54xx_phy_get_wol,
 	.set_wol	= bcm54xx_phy_set_wol,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM54213PE,
 	.phy_id_mask	= 0xffffffff,
@@ -1506,6 +1509,10 @@ static struct phy_driver broadcom_drivers[] = {
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.suspend	= bcm54xx_suspend,
 	.resume		= bcm54xx_resume,
+	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM5461,
 	.phy_id_mask	= 0xfffffff0,
@@ -1520,6 +1527,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.handle_interrupt = bcm_phy_handle_interrupt,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM54612E,
 	.phy_id_mask	= 0xfffffff0,
@@ -1534,6 +1544,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.handle_interrupt = bcm_phy_handle_interrupt,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 	.suspend	= bcm54xx_suspend,
 	.resume		= bcm54xx_resume,
 }, {
@@ -1550,6 +1563,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.probe		= bcm54616s_probe,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM5464,
 	.phy_id_mask	= 0xfffffff0,
@@ -1566,6 +1582,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.resume		= genphy_resume,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM5481,
 	.phy_id_mask	= 0xfffffff0,
@@ -1581,6 +1600,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.handle_interrupt = bcm_phy_handle_interrupt,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id         = PHY_ID_BCM54810,
 	.phy_id_mask    = 0xfffffff0,
@@ -1600,6 +1622,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.resume		= bcm54xx_resume,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id         = PHY_ID_BCM54811,
 	.phy_id_mask    = 0xfffffff0,
@@ -1619,6 +1644,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.resume		= bcm54xx_resume,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM5482,
 	.phy_id_mask	= 0xfffffff0,
@@ -1633,6 +1661,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.handle_interrupt = bcm_phy_handle_interrupt,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM50610,
 	.phy_id_mask	= 0xfffffff0,
@@ -1649,6 +1680,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.suspend	= bcm54xx_suspend,
 	.resume		= bcm54xx_resume,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM50610M,
 	.phy_id_mask	= 0xfffffff0,
@@ -1665,6 +1699,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.suspend	= bcm54xx_suspend,
 	.resume		= bcm54xx_resume,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM57780,
 	.phy_id_mask	= 0xfffffff0,
@@ -1679,6 +1716,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.handle_interrupt = bcm_phy_handle_interrupt,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCMAC131,
 	.phy_id_mask	= 0xfffffff0,
@@ -1723,6 +1763,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.probe		= bcm54xx_phy_probe,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM53125,
 	.phy_id_mask	= 0xfffffff0,
@@ -1738,6 +1781,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.handle_interrupt = bcm_phy_handle_interrupt,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id		= PHY_ID_BCM53128,
 	.phy_id_mask	= 0xfffffff0,
@@ -1753,6 +1799,9 @@ static struct phy_driver broadcom_drivers[] = {
 	.handle_interrupt = bcm_phy_handle_interrupt,
 	.link_change_notify	= bcm54xx_link_change_notify,
 	.led_brightness_set	= bcm_phy_led_brightness_set,
+	.led_hw_is_supported	= bcm_phy_led_hw_is_supported,
+	.led_hw_control_get	= bcm_phy_led_hw_control_get,
+	.led_hw_control_set	= bcm_phy_led_hw_control_set,
 }, {
 	.phy_id         = PHY_ID_BCM89610,
 	.phy_id_mask    = 0xfffffff0,

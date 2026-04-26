@@ -654,4 +654,12 @@ source "drivers/misc/uacce/Kconfig"
 source "drivers/misc/pvpanic/Kconfig"
 source "drivers/misc/mchp_pci1xxxx/Kconfig"
 source "drivers/misc/keba/Kconfig"
+config PTP_GPIO_PULSE
+	tristate "PTP GPIO Pulse Driver"
+	depends on GPIOLIB
+	default y
+	help
+	  Provides a fast userspace ioctl to trigger a GPIO pulse
+	  and read the PTP clock around it.
+
 endmenu

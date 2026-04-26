@@ -228,6 +228,8 @@ struct dma_buf_ops {
 	 * needs to be restarted.
 	 */
 	int (*begin_cpu_access)(struct dma_buf *, enum dma_data_direction);
+	int (*begin_cpu_access_partial)(struct dma_buf *, enum dma_data_direction,
+					unsigned int offset, unsigned int len);
 
 	/**
 	 * @end_cpu_access:
@@ -245,6 +247,8 @@ struct dma_buf_ops {
 	 * to be restarted.
 	 */
 	int (*end_cpu_access)(struct dma_buf *, enum dma_data_direction);
+	int (*end_cpu_access_partial)(struct dma_buf *, enum dma_data_direction,
+				      unsigned int offset, unsigned int len);
 
 	/**
 	 * @mmap:
@@ -621,8 +625,14 @@ void dma_buf_unmap_attachment(struct dma_buf_attachment *, struct sg_table *,
 void dma_buf_move_notify(struct dma_buf *dma_buf);
 int dma_buf_begin_cpu_access(struct dma_buf *dma_buf,
 			     enum dma_data_direction dir);
+int dma_buf_begin_cpu_access_partial(struct dma_buf *dma_buf,
+				     enum dma_data_direction dir,
+				     unsigned int offset, unsigned int len);
 int dma_buf_end_cpu_access(struct dma_buf *dma_buf,
 			   enum dma_data_direction dir);
+int dma_buf_end_cpu_access_partial(struct dma_buf *dma_buf,
+				   enum dma_data_direction dir,
+				   unsigned int offset, unsigned int len);
 struct sg_table *
 dma_buf_map_attachment_unlocked(struct dma_buf_attachment *attach,
 				enum dma_data_direction direction);
@@ -636,4 +646,5 @@ int dma_buf_vmap(struct dma_buf *dmabuf, struct iosys_map *map);
 void dma_buf_vunmap(struct dma_buf *dmabuf, struct iosys_map *map);
 int dma_buf_vmap_unlocked(struct dma_buf *dmabuf, struct iosys_map *map);
 void dma_buf_vunmap_unlocked(struct dma_buf *dmabuf, struct iosys_map *map);
+
 #endif /* __DMA_BUF_H__ */

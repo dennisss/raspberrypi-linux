@@ -8167,6 +8167,8 @@ static void dedupe_in_progress_warn(const struct btrfs_root *root)
 
 long btrfs_ioctl_send(struct btrfs_inode *inode, const struct btrfs_ioctl_send_args *arg)
 {
+	return -EINVAL;
+
 	int ret = 0;
 	struct btrfs_root *send_root = inode->root;
 	struct btrfs_fs_info *fs_info = send_root->fs_info;

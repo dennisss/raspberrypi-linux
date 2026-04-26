@@ -160,6 +160,78 @@ static int cma_heap_dma_buf_end_cpu_access(struct dma_buf *dmabuf,
 	return 0;
 }
 
+static int cma_heap_dma_buf_begin_cpu_access_partial(struct dma_buf *dmabuf,
+					     enum dma_data_direction direction,
+					     unsigned int offset, unsigned int len)
+{
+	struct cma_heap_buffer *buffer = dmabuf->priv;
+	struct dma_heap_attachment *a;
+	struct scatterlist *sg;
+	int i;
+
+	mutex_lock(&buffer->lock);
+
+	if (buffer->vmap_cnt)
+		invalidate_kernel_vmap_range(buffer->vaddr + offset, len);
+
+	list_for_each_entry(a, &buffer->attachments, list) {
+		unsigned int sg_offset = 0;
+		if (!a->mapped)
+			continue;
+
+		for_each_sg(a->table.sgl, sg, a->table.nents, i) {
+			unsigned int sg_len = sg_dma_len(sg);
+			if (offset < sg_offset + sg_len && offset + len > sg_offset) {
+				unsigned int start = max(offset, sg_offset);
+				unsigned int end = min(offset + len, sg_offset + sg_len);
+				unsigned int len_in_sg = end - start;
+				unsigned int off_in_sg = start - sg_offset;
+				dma_sync_single_for_cpu(a->dev, sg_dma_address(sg) + off_in_sg, len_in_sg, direction);
+			}
+			sg_offset += sg_len;
+		}
+	}
+	mutex_unlock(&buffer->lock);
+
+	return 0;
+}
+
+static int cma_heap_dma_buf_end_cpu_access_partial(struct dma_buf *dmabuf,
+					   enum dma_data_direction direction,
+					   unsigned int offset, unsigned int len)
+{
+	struct cma_heap_buffer *buffer = dmabuf->priv;
+	struct dma_heap_attachment *a;
+	struct scatterlist *sg;
+	int i;
+
+	mutex_lock(&buffer->lock);
+
+	if (buffer->vmap_cnt)
+		flush_kernel_vmap_range(buffer->vaddr + offset, len);
+
+	list_for_each_entry(a, &buffer->attachments, list) {
+		unsigned int sg_offset = 0;
+		if (!a->mapped)
+			continue;
+
+		for_each_sg(a->table.sgl, sg, a->table.nents, i) {
+			unsigned int sg_len = sg_dma_len(sg);
+			if (offset < sg_offset + sg_len && offset + len > sg_offset) {
+				unsigned int start = max(offset, sg_offset);
+				unsigned int end = min(offset + len, sg_offset + sg_len);
+				unsigned int len_in_sg = end - start;
+				unsigned int off_in_sg = start - sg_offset;
+				dma_sync_single_for_device(a->dev, sg_dma_address(sg) + off_in_sg, len_in_sg, direction);
+			}
+			sg_offset += sg_len;
+		}
+	}
+	mutex_unlock(&buffer->lock);
+
+	return 0;
+}
+
 static vm_fault_t cma_heap_vm_fault(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
@@ -266,6 +338,8 @@ static const struct dma_buf_ops cma_heap_buf_ops = {
 	.unmap_dma_buf = cma_heap_unmap_dma_buf,
 	.begin_cpu_access = cma_heap_dma_buf_begin_cpu_access,
 	.end_cpu_access = cma_heap_dma_buf_end_cpu_access,
+	.begin_cpu_access_partial = cma_heap_dma_buf_begin_cpu_access_partial,
+	.end_cpu_access_partial = cma_heap_dma_buf_end_cpu_access_partial,
 	.mmap = cma_heap_mmap,
 	.vmap = cma_heap_vmap,
 	.vunmap = cma_heap_vunmap,
