@@ -48,6 +48,10 @@
 #define MIRA220_CSI_DATA_TYPE_10_BIT 0x02
 #define MIRA220_CSI_DATA_TYPE_8_BIT 0x01
 
+#define MIRA220_EXP_EXT_REG CCI_REG8(0x1001)
+#define MIRA220_EXP_EXT_MASTER_MODE 0x41
+#define MIRA220_EXP_EXT_SINGLE_PIN_SLAVE_MODE 0x00
+
 /* Imager state master/slave registers */
 #define MIRA220_IMAGER_STATE_REG CCI_REG8(0x1003)
 #define MIRA220_IMAGER_STATE_STOP_AT_ROW 0x02
@@ -111,6 +115,8 @@
 #define MIRA220_REG_TEST_PATTERN CCI_REG8(0x2091)
 #define MIRA220_TEST_PATTERN_DISABLE 0x00
 #define MIRA220_TEST_PATTERN_VERTICAL_GRADIENT 0x01
+
+#define V4L2_CID_MIRA220_SLAVE_MODE (V4L2_CID_USER_BASE | 0x1001)
 
 struct mira220_reg {
 	u16 address;
@@ -1013,7 +1019,7 @@ static const char *const mira220_supply_name[] = {
 #define MIRA220_NUM_SUPPLIES ARRAY_SIZE(mira220_supply_name)
 
 
-// Mira220 comes in monochrome and RGB variants. This driver implements the RGB variant.
+// Mira220 comes in monochrome and RGB variants.
 /*
  * The supported formats.
  * This table MUST contain 4 entries per format, to cover the various flip
@@ -1038,6 +1044,21 @@ static const u32 mira220_mbus_formats[] = {
 	MEDIA_BUS_FMT_SGRBG8_1X8,
 	MEDIA_BUS_FMT_SGBRG8_1X8,
 	MEDIA_BUS_FMT_SBGGR8_1X8,
+
+	MEDIA_BUS_FMT_Y8_1X8,
+	MEDIA_BUS_FMT_Y8_1X8,
+	MEDIA_BUS_FMT_Y8_1X8,
+	MEDIA_BUS_FMT_Y8_1X8,
+
+	MEDIA_BUS_FMT_Y10_1X10,
+	MEDIA_BUS_FMT_Y10_1X10,
+	MEDIA_BUS_FMT_Y10_1X10,
+	MEDIA_BUS_FMT_Y10_1X10,
+
+	MEDIA_BUS_FMT_Y12_1X12,
+	MEDIA_BUS_FMT_Y12_1X12,
+	MEDIA_BUS_FMT_Y12_1X12,
+	MEDIA_BUS_FMT_Y12_1X12,
 
 };
 
@@ -1086,6 +1107,7 @@ struct mira220 {
 	struct v4l2_ctrl *hblank;
 	struct v4l2_ctrl *exposure;
 	struct v4l2_ctrl *gain;
+	struct v4l2_ctrl *slave_mode;
 
 	/* Current mode */
 	const struct mira220_mode *mode;
@@ -1093,6 +1115,8 @@ struct mira220 {
 	struct mutex mutex;
 
 	struct regmap *regmap;
+
+	bool running_master_mode;
 };
 
 static inline struct mira220 *to_mira220(struct v4l2_subdev *_sd)
@@ -1148,11 +1172,27 @@ static int mira220_write_start_streaming_regs(struct mira220 *mira220)
 	struct i2c_client *const client = v4l2_get_subdevdata(&mira220->sd);
 	int ret = 0;
 
-	// Setting master control
-	ret = cci_write(mira220->regmap, MIRA220_IMAGER_STATE_REG,
-			MIRA220_IMAGER_STATE_MASTER_CONTROL, NULL);
+	// Setting master/slave control
+	mira220->running_master_mode = true;
+	u8 exp_mode = MIRA220_EXP_EXT_MASTER_MODE;
+	u8 state_mode = MIRA220_IMAGER_STATE_MASTER_CONTROL;
+	if (mira220->slave_mode && v4l2_ctrl_g_ctrl(mira220->slave_mode)) {
+		exp_mode = MIRA220_EXP_EXT_SINGLE_PIN_SLAVE_MODE;
+		state_mode = MIRA220_IMAGER_STATE_SLAVE_CONTROL;
+		mira220->running_master_mode = false;
+	}
+
+	ret = cci_write(mira220->regmap, MIRA220_EXP_EXT_REG,
+			exp_mode, NULL);
 	if (ret) {
-		dev_err(&client->dev, "Error setting master control");
+		dev_err(&client->dev, "Error setting exp_ext (master/slave)");
+		return ret;
+	}
+
+	ret = cci_write(mira220->regmap, MIRA220_IMAGER_STATE_REG,
+			state_mode, NULL);
+	if (ret) {
+		dev_err(&client->dev, "Error setting imager state (master/slave)");
 		return ret;
 	}
 
@@ -1164,11 +1204,13 @@ static int mira220_write_start_streaming_regs(struct mira220 *mira220)
 		return ret;
 	}
 
-	ret = cci_write(mira220->regmap, MIRA220_IMAGER_RUN_REG,
-			MIRA220_IMAGER_RUN_START, NULL);
-	if (ret) {
-		dev_err(&client->dev, "Error setting internal trigger");
-		return ret;
+	if (mira220->running_master_mode) {
+		ret = cci_write(mira220->regmap, MIRA220_IMAGER_RUN_REG,
+				MIRA220_IMAGER_RUN_START, NULL);
+		if (ret) {
+			dev_err(&client->dev, "Error setting internal trigger");
+			return ret;
+		}
 	}
 
 	return ret;
@@ -1188,11 +1230,13 @@ static int mira220_write_stop_streaming_regs(struct mira220 *mira220)
 		return ret;
 	}
 
-	ret = cci_write(mira220->regmap, MIRA220_IMAGER_RUN_REG,
-			MIRA220_IMAGER_RUN_STOP, NULL);
-	if (ret) {
-		dev_err(&client->dev, "Error setting run reg to stop");
-		return ret;
+	if (mira220->running_master_mode) {
+		ret = cci_write(mira220->regmap, MIRA220_IMAGER_RUN_REG,
+				MIRA220_IMAGER_RUN_STOP, NULL);
+		if (ret) {
+			dev_err(&client->dev, "Error setting run reg to stop");
+			return ret;
+		}
 	}
 
 	fsleep(40000);
@@ -1317,6 +1361,8 @@ static int mira220_set_ctrl(struct v4l2_ctrl *ctrl)
 
 		break;
 	case V4L2_CID_HBLANK:
+		break;
+	case V4L2_CID_MIRA220_SLAVE_MODE:
 		break;
 	default:
 		dev_info(&client->dev,
@@ -1747,6 +1793,17 @@ static const struct v4l2_subdev_internal_ops mira220_internal_ops = {
 };
 
 /* Initialize control handlers */
+static const struct v4l2_ctrl_config mira220_slave_mode_ctrl = {
+	.ops = &mira220_ctrl_ops,
+	.id = V4L2_CID_MIRA220_SLAVE_MODE,
+	.name = "Slave Mode (Single Pin)",
+	.type = V4L2_CTRL_TYPE_BOOLEAN,
+	.min = 0,
+	.max = 1,
+	.step = 1,
+	.def = 0,
+};
+
 static int mira220_init_controls(struct mira220 *mira220)
 {
 	struct i2c_client *client = v4l2_get_subdevdata(&mira220->sd);
@@ -1812,6 +1869,8 @@ static int mira220_init_controls(struct mira220 *mira220)
 				     V4L2_CID_TEST_PATTERN,
 				     ARRAY_SIZE(mira220_test_pattern_menu) - 1,
 				     0, 0, mira220_test_pattern_menu);
+
+	mira220->slave_mode = v4l2_ctrl_new_custom(ctrl_hdlr, &mira220_slave_mode_ctrl, NULL);
 
 	if (ctrl_hdlr->error) {
 		ret = ctrl_hdlr->error;

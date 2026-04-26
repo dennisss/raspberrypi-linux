@@ -492,6 +492,37 @@ static long dma_buf_ioctl(struct file *file,
 
 		return ret;
 
+	case DMA_BUF_IOCTL_SYNC_PARTIAL: {
+		struct dma_buf_sync_partial sync_p;
+
+		if (copy_from_user(&sync_p, (void __user *) arg, sizeof(sync_p)))
+			return -EFAULT;
+
+		if (sync_p.flags & ~DMA_BUF_SYNC_VALID_FLAGS_MASK)
+			return -EINVAL;
+
+		switch (sync_p.flags & DMA_BUF_SYNC_RW) {
+		case DMA_BUF_SYNC_READ:
+			direction = DMA_FROM_DEVICE;
+			break;
+		case DMA_BUF_SYNC_WRITE:
+			direction = DMA_TO_DEVICE;
+			break;
+		case DMA_BUF_SYNC_RW:
+			direction = DMA_BIDIRECTIONAL;
+			break;
+		default:
+			return -EINVAL;
+		}
+
+		if (sync_p.flags & DMA_BUF_SYNC_END)
+			ret = dma_buf_end_cpu_access_partial(dmabuf, direction, sync_p.offset, sync_p.length);
+		else
+			ret = dma_buf_begin_cpu_access_partial(dmabuf, direction, sync_p.offset, sync_p.length);
+
+		return ret;
+	}
+
 	case DMA_BUF_SET_NAME_A:
 	case DMA_BUF_SET_NAME_B:
 		return dma_buf_set_name(dmabuf, (const char __user *)arg);
@@ -1426,6 +1457,33 @@ int dma_buf_begin_cpu_access(struct dma_buf *dmabuf,
 }
 EXPORT_SYMBOL_NS_GPL(dma_buf_begin_cpu_access, DMA_BUF);
 
+int dma_buf_begin_cpu_access_partial(struct dma_buf *dmabuf,
+				     enum dma_data_direction direction,
+				     unsigned int offset, unsigned int len)
+{
+	int ret = 0;
+
+	if (WARN_ON(!dmabuf))
+		return -EINVAL;
+
+	might_lock(&dmabuf->resv->lock.base);
+
+	if (dmabuf->ops->begin_cpu_access_partial)
+		ret = dmabuf->ops->begin_cpu_access_partial(dmabuf, direction, offset, len);
+	else if (dmabuf->ops->begin_cpu_access)
+		ret = dmabuf->ops->begin_cpu_access(dmabuf, direction);
+
+	/* Ensure that all fences are waited upon - but we first allow
+	 * the native handler the chance to do so more efficiently if it
+	 * chooses. A double invocation here will be reasonably cheap no-op.
+	 */
+	if (ret == 0)
+		ret = __dma_buf_begin_cpu_access(dmabuf, direction);
+
+	return ret;
+}
+EXPORT_SYMBOL_NS_GPL(dma_buf_begin_cpu_access_partial, DMA_BUF);
+
 /**
  * dma_buf_end_cpu_access - Must be called after accessing a dma_buf from the
  * cpu in the kernel context. Calls end_cpu_access to allow exporter-specific
@@ -1454,6 +1512,24 @@ int dma_buf_end_cpu_access(struct dma_buf *dmabuf,
 }
 EXPORT_SYMBOL_NS_GPL(dma_buf_end_cpu_access, DMA_BUF);
 
+int dma_buf_end_cpu_access_partial(struct dma_buf *dmabuf,
+				   enum dma_data_direction direction,
+				   unsigned int offset, unsigned int len)
+{
+	int ret = 0;
+
+	WARN_ON(!dmabuf);
+
+	might_lock(&dmabuf->resv->lock.base);
+
+	if (dmabuf->ops->end_cpu_access_partial)
+		ret = dmabuf->ops->end_cpu_access_partial(dmabuf, direction, offset, len);
+	else if (dmabuf->ops->end_cpu_access)
+		ret = dmabuf->ops->end_cpu_access(dmabuf, direction);
+
+	return ret;
+}
+EXPORT_SYMBOL_NS_GPL(dma_buf_end_cpu_access_partial, DMA_BUF);
 
 /**
  * dma_buf_mmap - Setup up a userspace mmap with the given vma

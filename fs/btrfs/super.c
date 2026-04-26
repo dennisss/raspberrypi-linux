@@ -2504,9 +2504,6 @@ static const struct init_sequence mod_init_seq[] = {
 		.init_func = btrfs_props_init,
 		.exit_func = NULL,
 	}, {
-		.init_func = btrfs_init_sysfs,
-		.exit_func = btrfs_exit_sysfs,
-	}, {
 		.init_func = btrfs_init_compress,
 		.exit_func = btrfs_exit_compress,
 	}, {

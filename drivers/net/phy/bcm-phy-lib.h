@@ -120,6 +120,12 @@ irqreturn_t bcm_phy_wol_isr(int irq, void *dev_id);
 
 int bcm_phy_led_brightness_set(struct phy_device *phydev,
 			       u8 index, enum led_brightness value);
+int bcm_phy_led_hw_is_supported(struct phy_device *phydev, u8 index,
+				unsigned long rules);
+int bcm_phy_led_hw_control_get(struct phy_device *phydev, u8 index,
+			       unsigned long *rules);
+int bcm_phy_led_hw_control_set(struct phy_device *phydev, u8 index,
+			       unsigned long rules);
 
 int bcm_setup_lre_master_slave(struct phy_device *phydev);
 int bcm_config_lre_aneg(struct phy_device *phydev, bool changed);
