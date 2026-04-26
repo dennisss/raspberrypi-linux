@@ -140,7 +140,6 @@ struct btrfs_compress_levels {
 extern const struct btrfs_compress_levels btrfs_heuristic_compress;
 extern const struct btrfs_compress_levels btrfs_zlib_compress;
 extern const struct btrfs_compress_levels btrfs_lzo_compress;
-extern const struct btrfs_compress_levels btrfs_zstd_compress;
 
 const char* btrfs_compress_type2str(enum btrfs_compression_type type);
 bool btrfs_compress_is_valid_type(const char *str, size_t len);
@@ -170,19 +169,5 @@ int lzo_decompress(struct list_head *ws, const u8 *data_in,
 		size_t destlen);
 struct list_head *lzo_alloc_workspace(struct btrfs_fs_info *fs_info);
 void lzo_free_workspace(struct list_head *ws);
-
-int zstd_compress_folios(struct list_head *ws, struct btrfs_inode *inode,
-			 u64 start, struct folio **folios, unsigned long *out_folios,
-		unsigned long *total_in, unsigned long *total_out);
-int zstd_decompress_bio(struct list_head *ws, struct compressed_bio *cb);
-int zstd_decompress(struct list_head *ws, const u8 *data_in,
-		struct folio *dest_folio, unsigned long dest_pgoff, size_t srclen,
-		size_t destlen);
-int zstd_alloc_workspace_manager(struct btrfs_fs_info *fs_info);
-void zstd_free_workspace_manager(struct btrfs_fs_info *fs_info);
-struct list_head *zstd_alloc_workspace(struct btrfs_fs_info *fs_info, int level);
-void zstd_free_workspace(struct list_head *ws);
-struct list_head *zstd_get_workspace(struct btrfs_fs_info *fs_info, int level);
-void zstd_put_workspace(struct btrfs_fs_info *fs_info, struct list_head *ws);
 
 #endif

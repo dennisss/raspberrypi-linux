@@ -191,20 +191,20 @@ static inline int nr_bioc_data_stripes(const struct btrfs_io_context *bioc)
 
 struct btrfs_device;
 
-void raid56_parity_recover(struct bio *bio, struct btrfs_io_context *bioc,
-			   int mirror_num);
-void raid56_parity_write(struct bio *bio, struct btrfs_io_context *bioc);
+static inline void raid56_parity_recover(struct bio *bio, struct btrfs_io_context *bioc,
+			   int mirror_num) { BUG(); }
+static inline void raid56_parity_write(struct bio *bio, struct btrfs_io_context *bioc) { BUG(); }
 
-struct btrfs_raid_bio *raid56_parity_alloc_scrub_rbio(struct bio *bio,
+static inline struct btrfs_raid_bio *raid56_parity_alloc_scrub_rbio(struct bio *bio,
 				struct btrfs_io_context *bioc,
 				struct btrfs_device *scrub_dev,
-				unsigned long *dbitmap, int stripe_nsectors);
-void raid56_parity_submit_scrub_rbio(struct btrfs_raid_bio *rbio);
+				unsigned long *dbitmap, int stripe_nsectors) { BUG(); return NULL; }
+static inline void raid56_parity_submit_scrub_rbio(struct btrfs_raid_bio *rbio) { BUG(); }
 
-void raid56_parity_cache_data_folios(struct btrfs_raid_bio *rbio,
-				     struct folio **data_folios, u64 data_logical);
+static inline void raid56_parity_cache_data_folios(struct btrfs_raid_bio *rbio,
+				     struct folio **data_folios, u64 data_logical) { BUG(); }
 
-int btrfs_alloc_stripe_hash_table(struct btrfs_fs_info *info);
-void btrfs_free_stripe_hash_table(struct btrfs_fs_info *info);
+static inline int btrfs_alloc_stripe_hash_table(struct btrfs_fs_info *info) { return 0; }
+static inline void btrfs_free_stripe_hash_table(struct btrfs_fs_info *info) {}
 
 #endif

@@ -13,11 +13,7 @@ config BTRFS_FS
 	select ZLIB_DEFLATE
 	select LZO_COMPRESS
 	select LZO_DECOMPRESS
-	select ZSTD_COMPRESS
-	select ZSTD_DECOMPRESS
 	select FS_IOMAP
-	select RAID6_PQ
-	select XOR_BLOCKS
 	depends on PAGE_SIZE_LESS_THAN_256KB
 
 	help

@@ -37,14 +37,13 @@
 
 static struct bio_set btrfs_compressed_bioset;
 
-static const char* const btrfs_compress_types[] = { "", "zlib", "lzo", "zstd" };
+static const char* const btrfs_compress_types[] = { "", "zlib", "lzo" };
 
 const char* btrfs_compress_type2str(enum btrfs_compression_type type)
 {
 	switch (type) {
 	case BTRFS_COMPRESS_ZLIB:
 	case BTRFS_COMPRESS_LZO:
-	case BTRFS_COMPRESS_ZSTD:
 	case BTRFS_COMPRESS_NONE:
 		return btrfs_compress_types[type];
 	default:
@@ -99,9 +98,6 @@ static int compression_compress_pages(int type, struct list_head *ws,
 	case BTRFS_COMPRESS_LZO:
 		return lzo_compress_folios(ws, inode, start, folios,
 					   out_folios, total_in, total_out);
-	case BTRFS_COMPRESS_ZSTD:
-		return zstd_compress_folios(ws, inode, start, folios,
-					    out_folios, total_in, total_out);
 	case BTRFS_COMPRESS_NONE:
 	default:
 		/*
@@ -124,7 +120,6 @@ static int compression_decompress_bio(struct list_head *ws,
 	switch (cb->compress_type) {
 	case BTRFS_COMPRESS_ZLIB: return zlib_decompress_bio(ws, cb);
 	case BTRFS_COMPRESS_LZO:  return lzo_decompress_bio(ws, cb);
-	case BTRFS_COMPRESS_ZSTD: return zstd_decompress_bio(ws, cb);
 	case BTRFS_COMPRESS_NONE:
 	default:
 		/*
@@ -143,8 +138,6 @@ static int compression_decompress(int type, struct list_head *ws,
 	case BTRFS_COMPRESS_ZLIB: return zlib_decompress(ws, data_in, dest_folio,
 						dest_pgoff, srclen, destlen);
 	case BTRFS_COMPRESS_LZO:  return lzo_decompress(ws, data_in, dest_folio,
-						dest_pgoff, srclen, destlen);
-	case BTRFS_COMPRESS_ZSTD: return zstd_decompress(ws, data_in, dest_folio,
 						dest_pgoff, srclen, destlen);
 	case BTRFS_COMPRESS_NONE:
 	default:
@@ -750,7 +743,6 @@ static const struct btrfs_compress_levels * const btrfs_compress_levels[] = {
 	&btrfs_heuristic_compress,
 	&btrfs_zlib_compress,
 	&btrfs_lzo_compress,
-	&btrfs_zstd_compress,
 };
 
 static struct list_head *alloc_workspace(struct btrfs_fs_info *fs_info, int type, int level)
@@ -759,7 +751,6 @@ static struct list_head *alloc_workspace(struct btrfs_fs_info *fs_info, int type
 	case BTRFS_COMPRESS_NONE: return alloc_heuristic_ws(fs_info);
 	case BTRFS_COMPRESS_ZLIB: return zlib_alloc_workspace(fs_info, level);
 	case BTRFS_COMPRESS_LZO:  return lzo_alloc_workspace(fs_info);
-	case BTRFS_COMPRESS_ZSTD: return zstd_alloc_workspace(fs_info, level);
 	default:
 		/*
 		 * This can't happen, the type is validated several times
@@ -775,7 +766,6 @@ static void free_workspace(int type, struct list_head *ws)
 	case BTRFS_COMPRESS_NONE: return free_heuristic_ws(ws);
 	case BTRFS_COMPRESS_ZLIB: return zlib_free_workspace(ws);
 	case BTRFS_COMPRESS_LZO:  return lzo_free_workspace(ws);
-	case BTRFS_COMPRESS_ZSTD: return zstd_free_workspace(ws);
 	default:
 		/*
 		 * This can't happen, the type is validated several times
@@ -930,7 +920,6 @@ static struct list_head *get_workspace(struct btrfs_fs_info *fs_info, int type, 
 	case BTRFS_COMPRESS_NONE: return btrfs_get_workspace(fs_info, type, level);
 	case BTRFS_COMPRESS_ZLIB: return zlib_get_workspace(fs_info, level);
 	case BTRFS_COMPRESS_LZO:  return btrfs_get_workspace(fs_info, type, level);
-	case BTRFS_COMPRESS_ZSTD: return zstd_get_workspace(fs_info, level);
 	default:
 		/*
 		 * This can't happen, the type is validated several times
@@ -981,7 +970,6 @@ static void put_workspace(struct btrfs_fs_info *fs_info, int type, struct list_h
 	case BTRFS_COMPRESS_NONE: return btrfs_put_workspace(fs_info, type, ws);
 	case BTRFS_COMPRESS_ZLIB: return btrfs_put_workspace(fs_info, type, ws);
 	case BTRFS_COMPRESS_LZO:  return btrfs_put_workspace(fs_info, type, ws);
-	case BTRFS_COMPRESS_ZSTD: return zstd_put_workspace(fs_info, ws);
 	default:
 		/*
 		 * This can't happen, the type is validated several times
@@ -1136,9 +1124,6 @@ int btrfs_alloc_compress_wsm(struct btrfs_fs_info *fs_info)
 	ret = alloc_workspace_manager(fs_info, BTRFS_COMPRESS_LZO);
 	if (ret < 0)
 		goto error;
-	ret = zstd_alloc_workspace_manager(fs_info);
-	if (ret < 0)
-		goto error;
 	return 0;
 error:
 	btrfs_free_compress_wsm(fs_info);
@@ -1150,7 +1135,6 @@ void btrfs_free_compress_wsm(struct btrfs_fs_info *fs_info)
 	free_workspace_manager(fs_info, BTRFS_COMPRESS_NONE);
 	free_workspace_manager(fs_info, BTRFS_COMPRESS_ZLIB);
 	free_workspace_manager(fs_info, BTRFS_COMPRESS_LZO);
-	zstd_free_workspace_manager(fs_info);
 }
 
 int __init btrfs_init_compress(void)
